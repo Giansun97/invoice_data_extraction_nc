@@ -34,6 +34,8 @@ def extract_information(text):
     importe_neto_pattern = r"Importe Neto ([\d.,]+)"
     iva_pattern = r"IVA (\d{2},\d{2})% ([\d.,]+)"
     impuesto_interno_pattern = r"IMPUESTO INTERNO (\d{2},\d{2})% ([\d.,]+)"
+    extraer_domicilio_pattern = r'Domicilio:\s*(.*?)(?:\s+Ing\. Brutos N°|$)'
+    extraer_codigo_postal_pattern = r'CP.\s*(.*?)(?:\s+Pedido Interno N°:|$)'
 
     # Extract matches using regex
     punto_venta_match = re.findall(punto_venta_pattern, text)
@@ -42,6 +44,8 @@ def extract_information(text):
     importe_neto_match = re.findall(importe_neto_pattern, text)
     iva_match = re.findall(iva_pattern, text)
     impuesto_interno_match = re.findall(impuesto_interno_pattern, text)
+    extraer_domicilio_match = re.findall(extraer_domicilio_pattern, text)
+    extraer_codigo_postal_match = re.findall(extraer_codigo_postal_pattern, text)
 
     # Extract specific information from matches or use default values
     punto_venta = punto_venta_match[0][0] if punto_venta_match else "0"
@@ -50,11 +54,14 @@ def extract_information(text):
     importe_neto = importe_neto_match[0] if importe_neto_match else "0"
     alicuota, monto = iva_match[0] if iva_match else ("0", "0")
     alicuota_imp_interno, monto_imp_interno = impuesto_interno_match[0] if impuesto_interno_match else ("0", "0")
+    domicilio = extraer_domicilio_match[0] if  extraer_domicilio_match else "0"
+    codigo_postal = extraer_codigo_postal_match[0] if extraer_codigo_postal_match else "0"
 
     # Return the extracted information as a dictionary
     return {
         "Numero de Factura": f"{punto_venta}-{numero_factura}",
         "Fecha de Emision": fecha_emision,
+        "Domicilio": f'{domicilio}, {codigo_postal}',
         "Importe Neto": importe_neto,
         "Monto de IVA": monto,
         "Monto de Imp Interno": monto_imp_interno
