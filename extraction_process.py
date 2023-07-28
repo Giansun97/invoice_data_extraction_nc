@@ -110,7 +110,7 @@ def start_extraction():
 
 
 # Tkinter UI
-
+print("Hola")
 # Create the Tkinter application window
 window = tk.Tk()
 
