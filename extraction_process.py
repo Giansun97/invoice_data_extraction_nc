@@ -37,6 +37,7 @@ def extract_information(text):
     extraer_domicilio_pattern = r'Domicilio:\s*(.*?)(?:\s+Ing\. Brutos N°|$)'
     extraer_codigo_postal_pattern = r'CP.\s*(.*?)(?:\s+Pedido Interno N°:|$)'
     nombre_empresa_pattern = r'Cliente código: (\d+)'
+    linea_reposicion_pattern = r"Reposici\s+n\s+de\s+planilla\s+(\d+)\s+Cli\s+(\d+)"
 
     # Extract matches using regex
     punto_venta_match = re.findall(punto_venta_pattern, text)
@@ -48,6 +49,7 @@ def extract_information(text):
     extraer_domicilio_match = re.findall(extraer_domicilio_pattern, text)
     extraer_codigo_postal_match = re.findall(extraer_codigo_postal_pattern, text)
     nombre_empresa_match = re.search(nombre_empresa_pattern, text)
+    linea_reposicion_match = re.findall(linea_reposicion_pattern, text)
 
     # Extract specific information from matches or use default values
     punto_venta = punto_venta_match[0][0] if punto_venta_match else "0"
@@ -59,6 +61,10 @@ def extract_information(text):
     domicilio = extraer_domicilio_match[0] if extraer_domicilio_match else "0"
     codigo_postal = extraer_codigo_postal_match[0] if extraer_codigo_postal_match else "0"
     nombre_empresa = nombre_empresa_match.group(1)
+    linea_reposicion = None
+    if linea_reposicion_match:
+        linea_reposicion = "Reposición de planilla {} Cli {}".format(linea_reposicion_match[0][0],
+                                                                     linea_reposicion_match[0][1])
 
     # Return the extracted information as a dictionary
     return {
@@ -66,6 +72,7 @@ def extract_information(text):
         "Fecha de Emision": fecha_emision,
         "Nro Cliente": nombre_empresa,
         "Domicilio": f'{domicilio}, {codigo_postal}',
+        "Detalle": linea_reposicion,
         "Importe Neto": importe_neto,
         "Monto de IVA": monto,
         "Monto de Imp Interno": monto_imp_interno
@@ -93,13 +100,18 @@ def start_extraction():
 
     invoices = [extract_information(text) for text in text_pages]
 
-    # Creamos un DataFrame con la info extraida
+    # Creamos un DataFrame con la info extraída
     df_invoices = pd.DataFrame(invoices)
 
     # Apply the function to the desired columns
     df_invoices['Importe Neto'] = df_invoices['Importe Neto'].apply(format_number)
     df_invoices['Monto de IVA'] = df_invoices['Monto de IVA'].apply(format_number)
     df_invoices['Monto de Imp Interno'] = df_invoices['Monto de Imp Interno'].apply(format_number)
+
+    # Recorrer el DataFrame y copiar el valor de "Detalle" si los números de factura son iguales
+    for i in range(len(df_invoices) - 1):
+        if df_invoices.at[i, 'Numero de Factura'] == df_invoices.at[i + 1, 'Numero de Factura']:
+            df_invoices.at[i, 'Detalle'] = df_invoices.at[i + 1, 'Detalle']
 
     # Exportar DataFrame a excel
     directory = os.path.dirname(file_path)  # Get the directory of the selected file
@@ -110,7 +122,7 @@ def start_extraction():
 
 
 # Tkinter UI
-print("Hola")
+
 # Create the Tkinter application window
 window = tk.Tk()
 
