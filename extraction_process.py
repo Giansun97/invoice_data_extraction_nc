@@ -1,7 +1,6 @@
 import os
 import re
 from tkinter import filedialog, messagebox
-
 import pdfplumber
 import pandas as pd
 import openpyxl
@@ -37,7 +36,8 @@ def extract_information(text):
     extraer_domicilio_pattern = r'Domicilio:\s*(.*?)(?:\s+Ing\. Brutos N°|$)'
     extraer_codigo_postal_pattern = r'CP.\s*(.*?)(?:\s+Pedido Interno N°:|$)'
     nombre_empresa_pattern = r'Cliente código: (\d+)'
-    linea_reposicion_pattern = r"Reposici\s+n\s+de\s+planilla\s+(\d+)\s+Cli\s+(\d+)"
+    linea_reposicion_pattern = (r"(Reposici\s+n\s+de\s+planilla\s+\d+\s+Cli\s+\d+)|("
+                                r"\w+\s+\w+\s+\d+\s+\w+\s+\d+-\d+\s+PLANILLA\s+\d+)")
 
     # Extract matches using regex
     punto_venta_match = re.findall(punto_venta_pattern, text)
@@ -63,8 +63,7 @@ def extract_information(text):
     nombre_empresa = nombre_empresa_match.group(1)
     linea_reposicion = None
     if linea_reposicion_match:
-        linea_reposicion = "Reposición de planilla {} Cli {}".format(linea_reposicion_match[0][0],
-                                                                     linea_reposicion_match[0][1])
+        linea_reposicion = "{} {}".format(linea_reposicion_match[0][0], linea_reposicion_match[0][1])
 
     # Return the extracted information as a dictionary
     return {
