@@ -6,6 +6,12 @@ import pandas as pd
 import openpyxl
 import tkinter as tk
 
+# configuracion
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.expand_frame_repr', False)
+pd.set_option('max_colwidth', 800)
+
 
 def extract_text_from_pdf(file_path):
     """
@@ -32,7 +38,7 @@ def extract_information(text):
     fecha_emision_pattern = r"Fecha emisión: (\d{2}/\d{2}/\d{4})"
     importe_neto_pattern = r"Importe Neto ([\d.,]+)"
     iva_pattern = r"IVA (\d{2},\d{2})% ([\d.,]+)"
-    impuesto_interno_pattern = r"IMPUESTO INTERNO (\d{2},\d{2})% ([\d.,]+)"
+    impuesto_interno_pattern = r"IMPUESTO INTERNO (?:\d{1,2},\d{2}% )?([\d.,]+)"
     extraer_domicilio_pattern = r'Domicilio:\s*(.*?)(?:\s+Ing\. Brutos N°|$)'
     extraer_codigo_postal_pattern = r'CP.\s*(.*?)(?:\s+Pedido Interno N°:|$)'
     nombre_empresa_pattern = r'Cliente código: (\d+)'
@@ -57,7 +63,7 @@ def extract_information(text):
     fecha_emision = fecha_emision_match[0] if fecha_emision_match else None
     importe_neto = importe_neto_match[0] if importe_neto_match else "0"
     alicuota, monto = iva_match[0] if iva_match else ("0", "0")
-    alicuota_imp_interno, monto_imp_interno = impuesto_interno_match[0] if impuesto_interno_match else ("0", "0")
+    monto_imp_interno = impuesto_interno_match[0] if impuesto_interno_match else "0"
     domicilio = extraer_domicilio_match[0] if extraer_domicilio_match else "0"
     codigo_postal = extraer_codigo_postal_match[0] if extraer_codigo_postal_match else "0"
     nombre_empresa = nombre_empresa_match.group(1)
@@ -112,10 +118,21 @@ def start_extraction():
         if df_invoices.at[i, 'Numero de Factura'] == df_invoices.at[i + 1, 'Numero de Factura']:
             df_invoices.at[i, 'Detalle'] = df_invoices.at[i + 1, 'Detalle']
 
+    # Agrupar por 'Numero de Factura' y sumar las columnas específicas
+    grouped_df = df_invoices.groupby('Numero de Factura').agg({
+        'Fecha de Emision': 'first',
+        'Nro Cliente': 'first',
+        'Domicilio': 'first',
+        'Detalle': 'first',
+        'Importe Neto': 'sum',
+        'Monto de IVA': 'sum',
+        'Monto de Imp Interno': 'sum'
+    }).reset_index()
+
     # Exportar DataFrame a excel
     directory = os.path.dirname(file_path)  # Get the directory of the selected file
     output_file = os.path.join(directory, "invoice_to_excel.xlsx")
-    df_invoices.to_excel(output_file, sheet_name="Facturas")
+    grouped_df.to_excel(output_file, sheet_name="Facturas")
     messagebox.showinfo("Extraction Complete", "Extraction process finished.\n"
                                                f"The Excel file is saved at:\n{output_file}")
 
